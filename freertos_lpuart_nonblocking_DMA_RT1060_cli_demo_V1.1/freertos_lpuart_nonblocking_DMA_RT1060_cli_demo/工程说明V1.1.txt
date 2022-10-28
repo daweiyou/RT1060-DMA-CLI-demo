@@ -1,0 +1,30 @@
+
+A: freertos_lpuart_nonblocking_DMA_RT1060
+1.此工程更新AN12679SW到SDK 2.8, 并与Freertos集成，
+2.采用non-blocking接口，在原来的LPUART_FREERTOS.c的基础上
+  实现LPUART FREERTOS私有接口，包括
+  LPUART_RTOS_Init_Private、LPUART_RTOS_Deinit_Private、LPUART_RTOS_Send_Private、LPUART_RTOS_Receive_Private
+3.实现LPUART_TransferAbortReceiveEDMA_bugfix（）修复SDK2.8带来的bug
+4.由于采用UART接口，发送和接收完全独立工作
+5.既然采用了DMA+non-blocking的方式，性能更加强并且不影响其他task的工作
+  DMA中接收实现了idle中断，接收的完成是基本是通过idle中断来触发RX_Complete的
+  故如果使用此接口实现shell功能，需要上位机串口下发命令通过回车换行触发或者通过专门的按键。
+  Teraterm此类工具，随时输入都会将数据下发。
+6.实现一个多任务的串口发送接收交互例程
+
+B:freertos_lpuart_nonblocking_DMA_RT1060_cli_demo 
+V1.0
+此工程在A的基础上，移植freertos cli 功能，实现shell功能
+默认的上位机shell工具在输入命令是是手动输入的，所以相隔两个字符间会产生idle标记，
+采用DMA non-blocking读取一个字节分析的方式也是适用的，所以上位机工具不要采用整体发送命令的工具，应使用主动收到一个字符就发送的方式。
+
+该demo启动后在EVK debug串口115200波特率情况下提示shell功能
+输入help回车会显示shell菜单
+
+V1.1
+发送函数使用non cache buffer，否则如果传入数据为cache buffer，直接将指针传递给DMA，就会发出错误数据。 
+修改发送函数将数据复制到non-cacheable的buffer再通过DMA发送
+vSerialPutString
+xSerialPutChar
+调整configCOMMAND_INT_MAX_OUTPUT_SIZE 为1024
+打印任务列表功能需要输出的信息较多
